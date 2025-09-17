@@ -66,6 +66,17 @@ export default {
       ]
     };
   },
+  async beforeRouteLeave(_to, _from, next) {
+    if (!this.gameStore.gameProgress.game3completed) {
+      try {
+        const gameRef = doc(db, "games", "game3");
+        await updateDoc(gameRef, { available: true });
+      } catch (error) {
+        console.error("Fout bij het vrijgeven van game3:", error);
+      }
+    }
+    next();
+  },
   methods: {
     nextStep() {
       if (this.currentStep < this.steps.length - 1) {

@@ -51,6 +51,17 @@ export default {
       heroImage: new URL('@/assets/game4/bom.png', import.meta.url).href
     };
   },
+  async beforeRouteLeave(_to, _from, next) {
+    if (!this.gameStore.gameProgress.game4completed) {
+      try {
+        const gameRef = doc(db, "games", "game4");
+        await updateDoc(gameRef, { available: true });
+      } catch (error) {
+        console.error("Fout bij het vrijgeven van game4:", error);
+      }
+    }
+    next();
+  },
   methods: {
     async checkCode() {
       if (this.enteredCode.toUpperCase() === this.correctCode) {

@@ -71,6 +71,17 @@ export default {
       heroImage: new URL('@/assets/game2/agentfromage1.png', import.meta.url).href
     };
   },
+  async beforeRouteLeave(_to, _from, next) {
+    if (!this.gameStore.gameProgress.game2completed) {
+      try {
+        const gameRef = doc(db, "games", "game2");
+        await updateDoc(gameRef, { available: true });
+      } catch (error) {
+        console.error("Fout bij het vrijgeven van game2:", error);
+      }
+    }
+    next();
+  },
   methods: {
     nextStep() {
       this.step++;

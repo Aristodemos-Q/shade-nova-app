@@ -86,13 +86,13 @@
           <article
             v-for="(tile, index) in tiles"
             :key="tile.id"
-            :class="['snowowl__tile card', { 'is-disabled': !tile.available }]"
+            :class="['snowowl__tile card', `state-${tile.state}`]"
             @click="selectGame(index)"
           >
             <div class="snowowl__tile-header">
               <span class="badge">Missie {{ index + 1 }}</span>
-              <span class="snowowl__tile-status" :class="{ 'is-locked': !tile.available }">
-                {{ tile.available ? 'Beschikbaar' : 'Bezet of voltooid' }}
+              <span class="snowowl__tile-status" :class="tileStatusClass(tile)">
+                {{ tileStatusLabel(tile) }}
               </span>
             </div>
             <img :src="tile.img" :alt="tile.title" class="snowowl__tile-image" />
@@ -125,7 +125,7 @@
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount, computed } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue";
 import { db } from "../firebase";
 import { collection, getDoc, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from 'vue-router';
@@ -149,11 +149,11 @@ export default {
     ]);
 
     const tiles = ref([
-      { id: 1, name: "Spel 1", img: new URL('@/assets/dimensions-collapsing.png', import.meta.url).href, title: "Dimensions collapsing", skill: "Ruimtelijk inzicht", available: true },
-      { id: 2, name: "Spel 2", img: new URL('@/assets/agent-fromage.png', import.meta.url).href, title: "Agent Fromage", skill: "Vingervlugheid", available: true },
-      { id: 3, name: "Spel 3", img: new URL('@/assets/laser-lockdown.png', import.meta.url).href, title: "Laser Lockdown", skill: "Precisie", available: true },
-      { id: 4, name: "Spel 4", img: new URL('@/assets/feel-it.png', import.meta.url).href, title: "Feel IT", skill: "Presteren onder druk", available: true },
-      { id: 5, name: "Spel 5", img: new URL('@/assets/dead-body.png', import.meta.url).href, title: "Murder mystery", skill: "Deductie", available: true }
+      { id: 1, name: "Spel 1", progressKey: "game1completed", img: new URL('@/assets/dimensions-collapsing.png', import.meta.url).href, title: "Dimensions collapsing", skill: "Ruimtelijk inzicht", available: true, state: "available" },
+      { id: 2, name: "Spel 2", progressKey: "game2completed", img: new URL('@/assets/agent-fromage.png', import.meta.url).href, title: "Agent Fromage", skill: "Vingervlugheid", available: true, state: "available" },
+      { id: 3, name: "Spel 3", progressKey: "game3completed", img: new URL('@/assets/laser-lockdown.png', import.meta.url).href, title: "Laser Lockdown", skill: "Precisie", available: true, state: "available" },
+      { id: 4, name: "Spel 4", progressKey: "game4completed", img: new URL('@/assets/feel-it.png', import.meta.url).href, title: "Feel IT", skill: "Presteren onder druk", available: true, state: "available" },
+      { id: 5, name: "Spel 5", progressKey: "game5completed", img: new URL('@/assets/dead-body.png', import.meta.url).href, title: "Murder mystery", skill: "Deductie", available: true, state: "available" }
     ]);
 
     const goForward = () => {
@@ -168,28 +168,43 @@ export default {
       }
     };
 
-    const fetchGameStatus = async () => {
-      for (let i = 1; i <= tiles.value.length; i++) {
-        const gameRef = doc(db, "games", `game${i}`);
-        const gameDoc = await getDoc(gameRef);
+    const computeTileState = (isAvailable, isCompleted) => {
+      if (isCompleted) {
+        return "completed";
+      }
+      return isAvailable ? "available" : "active";
+    };
 
-        if (gameDoc.exists()) {
-          const isAvailable = gameDoc.data().available;
-          const isCompletedByPlayer = gameStore.gameProgress[`game${i}completed`];
-          tiles.value[i - 1].available = isAvailable && !isCompletedByPlayer;
+    const fetchGameStatus = async () => {
+      for (const tile of tiles.value) {
+        try {
+          const gameRef = doc(db, "games", `game${tile.id}`);
+          const gameDoc = await getDoc(gameRef);
+          const isCompletedByPlayer = !!gameStore.gameProgress[tile.progressKey];
+          const isAvailable = gameDoc.exists() ? gameDoc.data().available !== false : true;
+
+          tile.state = computeTileState(isAvailable, isCompletedByPlayer);
+          tile.available = tile.state === "available";
+        } catch (error) {
+          console.error("Fout bij ophalen status van spel:", error);
+          const fallbackCompleted = !!gameStore.gameProgress[tile.progressKey];
+          tile.state = computeTileState(true, fallbackCompleted);
+          tile.available = tile.state === "available";
         }
       }
     };
 
     const selectGame = async (index) => {
-      if (!tiles.value[index].available) return;
+      const tile = tiles.value[index];
+      if (!tile || tile.state !== "available") return;
 
-      const gameRef = doc(db, "games", `game${index + 1}`);
+      const gameRef = doc(db, "games", `game${tile.id}`);
 
       try {
         await updateDoc(gameRef, { available: false });
-        tiles.value[index].available = false;
-        router.push(`game${index + 1}`);
+        tile.state = "active";
+        tile.available = false;
+        router.push(`/game${tile.id}`);
       } catch (error) {
         console.error("Fout bij het bijwerken van het spel:", error);
       }
@@ -252,11 +267,12 @@ export default {
 
     const resetGames = async () => {
       try {
-        for (let i = 1; i <= tiles.value.length; i++) {
-          const gameRef = doc(db, "games", `game${i}`);
+        for (const tile of tiles.value) {
+          const gameRef = doc(db, "games", `game${tile.id}`);
           await updateDoc(gameRef, { available: true });
         }
         tiles.value.forEach(tile => {
+          tile.state = "available";
           tile.available = true;
         });
       } catch (error) {
@@ -320,6 +336,17 @@ export default {
       };
     });
 
+    const tileStatusLabel = tile => {
+      if (tile.state === "completed") return "Voltooid";
+      if (tile.state === "active") return "Bezig";
+      return "Beschikbaar";
+    };
+
+    const tileStatusClass = tile => ({
+      "is-locked": tile.state === "active",
+      "is-complete": tile.state === "completed"
+    });
+
     let statusInterval;
     onMounted(() => {
       const savedName = localStorage.getItem("playerName");
@@ -333,6 +360,14 @@ export default {
       fetchGameStatus();
       statusInterval = setInterval(fetchGameStatus, 2500);
     });
+
+    watch(
+      () => ({ ...gameStore.gameProgress }),
+      () => {
+        fetchGameStatus();
+      },
+      { deep: true }
+    );
 
     onBeforeUnmount(() => {
       clearInterval(statusInterval);
@@ -357,7 +392,9 @@ export default {
       allGamesCompleted,
       canStart,
       progressCircleStyle,
-      switchPlayer
+      switchPlayer,
+      tileStatusLabel,
+      tileStatusClass
     };
   }
 };
@@ -469,8 +506,8 @@ export default {
 }
 
 .snowowl__progress-circle {
-  width: 120px;
-  height: 120px;
+  width: clamp(100px, 32vw, 120px);
+  height: clamp(100px, 32vw, 120px);
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -523,9 +560,9 @@ export default {
 }
 
 .snowowl__vault-digit {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+  width: clamp(48px, 14vw, 56px);
+  height: clamp(48px, 14vw, 56px);
+  border-radius: 50%;
   display: grid;
   place-items: center;
   font-size: 1.5rem;
@@ -544,8 +581,8 @@ export default {
 }
 
 .snowowl__vault-digits--large .snowowl__vault-digit {
-  width: 64px;
-  height: 64px;
+  width: clamp(56px, 16vw, 68px);
+  height: clamp(56px, 16vw, 68px);
   font-size: 1.8rem;
 }
 
@@ -566,18 +603,24 @@ export default {
   gap: 1rem;
   padding: 1.25rem;
   cursor: pointer;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease;
 }
 
-.snowowl__tile:hover {
+.snowowl__tile.state-available:hover {
   transform: translateY(-4px);
   box-shadow: 0 25px 40px rgba(6, 10, 25, 0.45);
 }
 
-.snowowl__tile.is-disabled {
-  opacity: 0.55;
+.snowowl__tile.state-active {
   cursor: not-allowed;
-  filter: grayscale(0.2);
+  opacity: 0.6;
+  filter: grayscale(0.15);
+}
+
+.snowowl__tile.state-completed {
+  cursor: not-allowed;
+  border: 1px solid rgba(74, 227, 140, 0.25);
+  box-shadow: 0 18px 40px rgba(6, 25, 18, 0.35);
 }
 
 .snowowl__tile-header {
@@ -596,11 +639,19 @@ export default {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-secondary);
+  border: 1px solid transparent;
 }
 
 .snowowl__tile-status.is-locked {
   background: rgba(255, 107, 107, 0.12);
   color: var(--danger-color);
+  border-color: rgba(255, 107, 107, 0.35);
+}
+
+.snowowl__tile-status.is-complete {
+  background: rgba(74, 227, 140, 0.12);
+  color: var(--success-color);
+  border-color: rgba(74, 227, 140, 0.35);
 }
 
 .snowowl__tile-image {

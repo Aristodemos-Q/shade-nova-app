@@ -102,6 +102,17 @@ export default {
       return this.letters.filter(letter => letter !== "").length;
     }
   },
+  async beforeRouteLeave(_to, _from, next) {
+    if (!this.gameStore.gameProgress.game1completed) {
+      try {
+        const gameRef = doc(db, "games", "game1");
+        await updateDoc(gameRef, { available: true });
+      } catch (error) {
+        console.error("Fout bij het vrijgeven van game1:", error);
+      }
+    }
+    next();
+  },
   methods: {
     async checkWord() {
       const word = this.wordInput.toUpperCase();
@@ -169,7 +180,7 @@ export default {
     closeMessage() {
       this.message = "";
       if (this.isCorrect) {
-        this.router.push('/');
+        this.router.push('/snowowl');
       }
     },
     triggerConfetti() {
