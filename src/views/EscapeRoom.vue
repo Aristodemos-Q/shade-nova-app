@@ -1,149 +1,167 @@
 <template>
-    <div class="game-container">
-      <div class="game-page">
-        <h1>🔪 Welkom bij de EscapeRoom! 🕵️‍♂️</h1>
-        <p>De beruchte detectivezaak wacht op jou... Ga naar lokaal J2.06 bij het leerplein om het spel te starten.</p>
-        <p>Open de camera app op de windows xp computer en scan de juiste afbeeldingen op de muur. Kijk op het scherm welke letters verschijnen.</p>
-        <p>Verzamel de letters en maak een woord om verder te gaan.</p>
-        
-        <input v-model="enteredCode" type="text" placeholder="Voer de geheime code in..." />
-        <button @click="checkCode">Ontgrendel de waarheid</button>
-        
-        <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+  <div class="mission mission--escape">
+    <section class="mission__hero card surface-frosted">
+      <div class="mission__hero-copy">
+        <span class="badge">Missie 5</span>
+        <h1>Murder Mystery</h1>
+        <p>Ga naar lokaal J2.06 en ontrafel het mysterie. Gebruik de oude Windows XP-computer en scan de juiste aanwijzingen om de letters te verzamelen.</p>
       </div>
-      <!-- <div class="game-images">
-        <img :src="gameimages[0]" class="gameimage" />
-        <img :src="gameimages[1]" class="gameimage" />
-      </div> -->
-    </div>
-  </template>
-  
-  <script>
-  import { useGameStore } from "@/stores/gameStore";
-  import { useRouter } from "vue-router";
-  import { db } from "@/firebase";
-  import { updateDoc, query, where, getDocs, collection, doc } from "firebase/firestore";
+      <div class="mission__hero-visual shadow-ring">
+        <img :src="heroImage" alt="Murder Mystery" />
+      </div>
+    </section>
 
-  export default {
-    data() {
-      return {
-        correctCode: "MOORD", // Pas deze code aan naar de juiste waarde
-        enteredCode: "",
-        errorMessage: "",
-        gameimages: [new URL('@/assets/game5/ar1.png', import.meta.url).href, new URL('@/assets/game5/ar2.png', import.meta.url).href]
-      };
-    },
-    setup() {
-      return {
-        gameStore: useGameStore(),
-        router: useRouter(),
-      };
-    },
-    methods: {
-      async checkCode() {
-        if (this.enteredCode.toUpperCase() === this.correctCode) {
-          // 🔹 Update voortgang in Pinia store en Firestore
-          this.gameStore.completeGame("game5completed");
+    <section class="mission__panel card">
+      <h2 class="section-heading">Missiebriefing</h2>
+      <ul class="mission__list">
+        <li><strong>1.</strong> Start de camera-app op de Windows XP-computer.</li>
+        <li><strong>2.</strong> Scan de aanwijzingen op de muur en noteer de letters.</li>
+        <li><strong>3.</strong> Vorm het codewoord en voer het hier in om het dossier te sluiten.</li>
+      </ul>
+    </section>
 
-          try {
-            const gameInstanceRef = collection(db, "gameinstances");
-            const q = query(gameInstanceRef, where("name", "==", this.gameStore.playerName));
-            const querySnapshot = await getDocs(q);
+    <section class="mission__panel card">
+      <h2 class="section-heading">Ontgrendel de waarheid</h2>
+      <p class="section-subtext">Combineer alle gevonden letters en voer het woord in om de zaak op te lossen.</p>
+      <div class="mission__code-group">
+        <input v-model="enteredCode" type="text" placeholder="Voer de geheime code in" maxlength="5" @keydown.enter="checkCode" />
+        <button class="btn" @click="checkCode">Ontgrendel</button>
+      </div>
+      <p v-if="errorMessage" class="mission__feedback is-error">{{ errorMessage }}</p>
+      <p v-else-if="successMessage" class="mission__feedback">{{ successMessage }}</p>
+    </section>
+  </div>
+</template>
 
-            if (!querySnapshot.empty) {
-              const playerDoc = querySnapshot.docs[0];
-              await updateDoc(playerDoc.ref, { game5completed: true });
+<script>
+import { useGameStore } from "@/stores/gameStore";
+import { useRouter } from "vue-router";
+import { db } from "@/firebase";
+import { updateDoc, query, where, getDocs, collection, doc } from "firebase/firestore";
 
-              // 🔹 Zet het spel opnieuw beschikbaar
-              const gameRef = doc(db, "games", "game5");
-              await updateDoc(gameRef, { available: true });
-            } else {
-              console.error("Speler niet gevonden in Firestore!");
-            }
-          } catch (error) {
-            console.error("Fout bij updaten van Firestore:", error);
+export default {
+  data() {
+    return {
+      correctCode: "MOORD",
+      enteredCode: "",
+      errorMessage: "",
+      successMessage: "",
+      gameStore: useGameStore(),
+      router: useRouter(),
+      heroImage: new URL('@/assets/game5/ar1.png', import.meta.url).href
+    };
+  },
+  methods: {
+    async checkCode() {
+      if (this.enteredCode.toUpperCase() === this.correctCode) {
+        this.errorMessage = "";
+        this.successMessage = "🕵️ Perfect! Het mysterie is opgelost.";
+        this.gameStore.completeGame("game5completed");
+
+        try {
+          const gameInstanceRef = collection(db, "gameinstances");
+          const q = query(gameInstanceRef, where("name", "==", this.gameStore.playerName));
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            const playerDoc = querySnapshot.docs[0];
+            await updateDoc(playerDoc.ref, { game5completed: true });
+
+            const gameRef = doc(db, "games", "game5");
+            await updateDoc(gameRef, { available: true });
           }
-
-          // 🔹 Stuur speler na 2 seconden naar /snowowl
-          setTimeout(() => {
-            this.router.push("/snowowl");
-          }, 2000);
-        } else {
-          this.errorMessage = "Verkeerde code... het mysterie blijft onopgelost.";
+        } catch (error) {
+          console.error("Fout bij updaten van Firestore:", error);
         }
+
+        setTimeout(() => {
+          this.router.push("/snowowl");
+        }, 2000);
+      } else {
+        this.successMessage = "";
+        this.errorMessage = "Verkeerde code... het mysterie blijft onopgelost.";
       }
     }
-  };
-  </script>
-  
-  <style scoped>
-  .game-container {
-    margin-top:5vh;
-    /* background: url('@/assets/background.jpg') no-repeat center center fixed; */
-    background: #111;
-    background-size: cover;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
   }
-  
-  .game-page {
-    text-align: center;
-    padding: 20px;
-    background-color: #1a1a1a;
-    color: #ff4444;
-    font-family: 'Creepster', cursive;
-    border: 3px solid #ff4444;
-    box-shadow: 0 0 15px red;
-    max-width: 600px;
-    margin: 50px;
-    padding: 20px;
-    border-radius: 10px;
-    position: relative;
-    z-index: 2; /* Zorg ervoor dat de game page boven de achtergrondafbeelding verschijnt */
+};
+</script>
+
+<style scoped>
+.mission {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-lg);
+  padding: 0 1.25rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.mission__hero {
+  display: grid;
+  gap: var(--gap-md);
+  padding: 2rem 1.75rem;
+  align-items: center;
+}
+
+.mission__hero-copy h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 2.4rem);
+  margin: 0.25rem 0 0.75rem;
+}
+
+.mission__hero-copy p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.mission__hero-visual {
+  display: grid;
+  place-items: center;
+}
+
+.mission__hero-visual img {
+  width: min(260px, 70vw);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mission__panel {
+  display: grid;
+  gap: 1rem;
+  text-align: left;
+}
+
+.mission__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.mission__code-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.mission__feedback {
+  margin: 0;
+  color: var(--success-color);
+  font-weight: 600;
+}
+
+.mission__feedback.is-error {
+  color: var(--danger-color);
+}
+
+@media (min-width: 768px) {
+  .mission__hero {
+    grid-template-columns: 1.1fr 0.9fr;
   }
-  
-  input {
-    margin: 10px;
-    padding: 10px;
-    border: 2px solid #ff4444;
-    background-color: #333;
-    color: white;
-    font-size: 18px;
-    text-align: center;
+
+  .mission__panel {
+    padding: 2rem 1.75rem;
   }
-  
-  button {
-    padding: 10px 15px;
-    background-color: #ff4444;
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
-    transition: 0.3s;
-  }
-  
-  button:hover {
-    background-color: darkred;
-    box-shadow: 0 0 10px red;
-  }
-  
-  .error {
-    color: yellow;
-    margin-top: 10px;
-    font-weight: bold;
-  }
-  .gameimages {
-    display: flex;
-    flex-direction: column;
-  }
-  .gameimage {
-    max-width: 80%;
-    border:#000000;
-    border-radius: 10px;
-    margin: 10px;
-  }
-  </style>
-  
+}
+</style>

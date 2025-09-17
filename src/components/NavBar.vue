@@ -1,17 +1,38 @@
 <template>
-  <nav class="navbar">
-    <div v-if="gameStore.playerName" class="player-info">
-      👤 {{ gameStore.playerName }}
+  <header class="navbar" :class="{ 'navbar--active': gameStore.playerName }">
+    <div class="navbar__brand">
+      <div class="navbar__logo shadow-ring">
+        <img :src="logo" alt="S.H.A.D.E logo" />
+      </div>
+      <div class="navbar__copy">
+        <span class="navbar__eyebrow">S.H.A.D.E</span>
+        <span class="navbar__title">Agent Console</span>
+      </div>
     </div>
-    <div v-if="gameStore.playerName" class="game-progress">
-      🎮 {{ completedGames }}/5 spellen voltooid
+
+    <div v-if="gameStore.playerName" class="navbar__status">
+      <div class="navbar__agent">
+        <span class="navbar__avatar">{{ playerInitial }}</span>
+        <div>
+          <p class="navbar__label">Ingelogd als</p>
+          <p class="navbar__name">{{ gameStore.playerName }}</p>
+        </div>
+      </div>
+
+      <div class="navbar__progress">
+        <div class="navbar__progress-bar">
+          <span class="navbar__progress-fill" :style="{ width: progressPercent + '%' }"></span>
+        </div>
+        <p class="navbar__progress-text">{{ completedGames }} / 5 missies voltooid</p>
+      </div>
     </div>
-  </nav>
+  </header>
 </template>
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useGameStore } from "../stores/gameStore";
+import logo from "@/assets/logo.png";
 
 export default {
   setup() {
@@ -29,8 +50,17 @@ export default {
       ].filter(Boolean).length;
     });
 
+    const progressPercent = computed(() => {
+      return Math.round((completedGames.value / 5) * 100);
+    });
+
+    const playerInitial = computed(() => {
+      if (!gameStore.playerName) return "?";
+      return gameStore.playerName.charAt(0).toUpperCase();
+    });
+
     let interval = ref(null);
-    
+
     onMounted(() => {
       // 🚀 Elke 3 seconden checken of er een update is
       interval.value = setInterval(() => {
@@ -42,7 +72,7 @@ export default {
       clearInterval(interval.value); // ❌ Voorkom geheugenlekken
     });
 
-    return { gameStore, completedGames };
+    return { gameStore, completedGames, progressPercent, playerInitial, logo };
   },
 };
 </script>
@@ -52,25 +82,158 @@ export default {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
+  right: 0;
+  padding: 18px 20px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: white;
-  background: rgba(0, 0, 0, 0.8); /* Transparante achtergrond */
-  backdrop-filter: blur(5px); /* Luxe blurry effect */
+  justify-content: space-between;
+  gap: 1.5rem;
+  background: linear-gradient(135deg, rgba(14, 18, 33, 0.92), rgba(21, 26, 48, 0.92));
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 18px 40px rgba(4, 7, 22, 0.55);
   z-index: 1000;
-  height: 60px; /* Zorgt ervoor dat er altijd een navbar is, ook als deze leeg is */
 }
 
-.player-info {
-  margin-left: 20px;
+.navbar--active {
+  border-bottom-color: rgba(124, 92, 255, 0.24);
 }
 
-.game-progress {
-  margin-right: 20px;
+.navbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.navbar__logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 18px;
+  background: rgba(124, 92, 255, 0.15);
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(124, 92, 255, 0.3);
+  padding: 8px;
+}
+
+.navbar__logo img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.navbar__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navbar__eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(244, 246, 255, 0.6);
+}
+
+.navbar__title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: 0.04em;
+}
+
+.navbar__status {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.navbar__agent {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.navbar__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(124, 92, 255, 0.15);
+  display: grid;
+  place-items: center;
+  color: var(--accent-color);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.navbar__label {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(244, 246, 255, 0.6);
+}
+
+.navbar__name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.navbar__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 150px;
+}
+
+.navbar__progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.navbar__progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, var(--accent-strong), #4ae6f7);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.navbar__progress-text {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(244, 246, 255, 0.7);
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 720px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 18px;
+  }
+
+  .navbar__status {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .navbar__progress {
+    width: 100%;
+    min-width: unset;
+  }
 }
 </style>
