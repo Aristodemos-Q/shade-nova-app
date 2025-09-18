@@ -55,7 +55,7 @@ export default {
     if (!this.gameStore.gameProgress.game4completed) {
       try {
         const gameRef = doc(db, "games", "game4");
-        await updateDoc(gameRef, { available: true });
+        await updateDoc(gameRef, { available: true, lockedBy: null, lockedAt: null });
       } catch (error) {
         console.error("Fout bij het vrijgeven van game4:", error);
       }
@@ -66,7 +66,7 @@ export default {
     async checkCode() {
       if (this.enteredCode.toUpperCase() === this.correctCode) {
         this.errorMessage = "";
-        this.successMessage = "🎖️ Goed gedaan agent! De bom is ontmanteld.";
+        this.successMessage = "Goed gedaan agent! De bom is ontmanteld.";
         this.gameStore.completeGame("game4completed");
 
         try {
@@ -79,7 +79,7 @@ export default {
             await updateDoc(playerDoc.ref, { game4completed: true });
 
             const gameRef = doc(db, "games", "game4");
-            await updateDoc(gameRef, { available: true });
+            await updateDoc(gameRef, { available: true, lockedBy: null, lockedAt: null });
           }
         } catch (error) {
           console.error("Fout bij updaten van Firestore:", error);
@@ -90,7 +90,7 @@ export default {
         }, 2000);
       } else {
         this.successMessage = "";
-        this.errorMessage = "Verkeerde code... het mysterie blijft onopgelost.";
+        this.errorMessage = "Verkeerde code, probeer het opnieuw.";
       }
     }
   }
@@ -164,6 +164,31 @@ export default {
 
 .mission__feedback.is-error {
   color: var(--danger-color);
+}
+
+@media (max-width: 640px) {
+  .mission__code-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .mission__code-group .btn {
+    width: 100%;
+  }
+
+  .mission__code-group input {
+    width: 100%;
+  }
+
+  .mission__step-controls {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .mission__step-controls .btn {
+    width: 100%;
+  }
 }
 
 @media (min-width: 768px) {

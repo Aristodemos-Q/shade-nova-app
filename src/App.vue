@@ -23,13 +23,14 @@ export default {
 }
 
 .view-shell {
-  padding-top: 86px;
+  padding-top: calc(var(--navbar-height, 96px) + 20px);
   padding-bottom: 32px;
 }
 
 @media (min-width: 768px) {
   .view-shell {
-    padding-top: 96px;
+    padding-top: calc(var(--navbar-height, 96px) + 32px);
   }
 }
 </style>
+

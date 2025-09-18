@@ -106,7 +106,7 @@ export default {
     if (!this.gameStore.gameProgress.game1completed) {
       try {
         const gameRef = doc(db, "games", "game1");
-        await updateDoc(gameRef, { available: true });
+        await updateDoc(gameRef, { available: true, lockedBy: null, lockedAt: null });
       } catch (error) {
         console.error("Fout bij het vrijgeven van game1:", error);
       }
@@ -146,7 +146,7 @@ export default {
             await updateDoc(playerDoc.ref, { game1completed: true });
 
             const gameRef = doc(db, "games", "game1");
-            await updateDoc(gameRef, { available: true });
+            await updateDoc(gameRef, { available: true, lockedBy: null, lockedAt: null });
           }
         } catch (error) {
           console.error("Fout bij updaten van Firestore:", error);
@@ -314,12 +314,14 @@ export default {
 
 .mission__letters {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 0.75rem;
 }
 
 .mission__letter {
-  flex: 1;
+  flex: 0 0 clamp(56px, 20vw, 72px);
+  width: clamp(56px, 20vw, 72px);
   aspect-ratio: 1 / 1;
   display: grid;
   place-items: center;
@@ -421,6 +423,43 @@ export default {
 .fade-scale-leave-to {
   opacity: 0;
   transform: translateY(12px) scale(0.96);
+}
+
+@media (max-width: 640px) {
+  .mission__code-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .mission__code-group .btn {
+    width: 100%;
+  }
+
+  .mission__code-group input {
+    width: 100%;
+  }
+
+  .mission__step-controls {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .mission__step-controls .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .mission__word-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .mission__word-group .btn {
+    width: 100%;
+  }
 }
 
 @media (min-width: 768px) {

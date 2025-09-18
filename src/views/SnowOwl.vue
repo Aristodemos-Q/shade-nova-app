@@ -18,6 +18,15 @@
           placeholder="Jouw codenaam"
           maxlength="20"
         />
+        <p v-if="duplicateNotice" class="snowowl__duplicate-notice">{{ duplicateNotice }}</p>
+        <div v-if="existingAgent" class="snowowl__duplicate-actions">
+          <button class="btn" @click="confirmExistingAgent" :disabled="isCheckingName">
+            Ga verder als {{ playerName }}
+          </button>
+          <button class="btn btn--ghost" @click="cancelExistingAgent" :disabled="isCheckingName">
+            Kies andere codenaam
+          </button>
+        </div>
         <div class="snowowl__intro-actions">
           <button class="btn btn--subtle" v-if="popupIndex > 0" @click="goBack">Vorige</button>
           <button
@@ -30,7 +39,7 @@
           <button
             class="btn"
             v-if="popupIndex === popups.length - 1"
-            :disabled="!canStart"
+            :disabled="!canStart || isCheckingName || !!existingAgent"
             @click="startGame"
           >
             Start missie
@@ -53,13 +62,13 @@
         <div class="snowowl__progress">
           <div class="snowowl__progress-circle" :style="progressCircleStyle">
             <div class="snowowl__progress-inner">
-              <strong>{{ completedCount }}</strong>
+              <strong>{{ displayedCompletedCount }}</strong>
               <span>van {{ tiles.length }}</span>
             </div>
           </div>
           <div class="snowowl__progress-copy">
             <h3>Missie voortgang</h3>
-            <p class="section-subtext">Je hebt {{ completedCount }} van de {{ tiles.length }} missies voltooid.</p>
+            <p class="section-subtext">Je hebt {{ displayedCompletedCount }} van de {{ tiles.length }} missies voltooid.</p>
           </div>
         </div>
         <div class="snowowl__vault">
@@ -67,16 +76,24 @@
             <span class="badge">Kluiscode</span>
             <p class="section-subtext">Elk voltooid spel onthult een nieuw cijfer.</p>
           </div>
-          <div class="snowowl__vault-digits">
-            <span
-              v-for="(digit, index) in vaultDigits"
-              :key="index"
-              :class="['snowowl__vault-digit', { 'is-revealed': index < completedCount }]"
-            >
-              {{ digit }}
-            </span>
+          <div class="snowowl__vault-dial">
+            <div class="snowowl__vault-ring">
+              <span
+                v-for="(digit, index) in maskedVaultDigits"
+                :key="index"
+                :class="['snowowl__vault-digit', { 'is-revealed': index < displayedCompletedCount }]"
+                :style="dialPositions[index]"
+              >
+                {{ digit }}
+              </span>
+              <div class="snowowl__vault-core">
+                <span class="snowowl__vault-core-label">Ontgrendeld</span>
+                <strong>{{ displayedCompletedCount }} / {{ tiles.length }}</strong>
+              </div>
+            </div>
           </div>
         </div>
+
       </section>
 
       <section class="snowowl__tiles">
@@ -127,7 +144,7 @@
 <script>
 import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue";
 import { db } from "../firebase";
-import { collection, getDoc, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDoc, getDocs, doc, updateDoc, addDoc, serverTimestamp, query, where } from "firebase/firestore";
 import { useRouter } from 'vue-router';
 import { useGameStore } from "../stores/gameStore";
 
@@ -139,6 +156,11 @@ export default {
     const gameStore = useGameStore();
     const playerName = ref('');
     const vaultCode = ref('');
+    const isCheckingName = ref(false);
+    const duplicateNotice = ref('');
+    const existingAgent = ref(null);
+    const duplicateAgentName = ref('');
+    const progressReady = ref(false);
 
     const popups = ref([
       { title: "Welkom!", img: new URL('@/assets/sneeuwuil.png', import.meta.url).href, text: "Je staat op het punt om de ultieme test van S.H.A.D.E. te ervaren." },
@@ -155,6 +177,8 @@ export default {
       { id: 4, name: "Spel 4", progressKey: "game4completed", img: new URL('@/assets/feel-it.png', import.meta.url).href, title: "Feel IT", skill: "Presteren onder druk", available: true, state: "available" },
       { id: 5, name: "Spel 5", progressKey: "game5completed", img: new URL('@/assets/dead-body.png', import.meta.url).href, title: "Murder mystery", skill: "Deductie", available: true, state: "available" }
     ]);
+
+    const STALE_LOCK_MS = 7 * 60 * 1000;
 
     const goForward = () => {
       if (popupIndex.value < popups.value.length - 1) {
@@ -175,22 +199,67 @@ export default {
       return isAvailable ? "available" : "active";
     };
 
-    const fetchGameStatus = async () => {
+    const fetchGameStatus = async (enableProgress = false) => {
       for (const tile of tiles.value) {
+        const gameRef = doc(db, "games", `game${tile.id}`);
         try {
-          const gameRef = doc(db, "games", `game${tile.id}`);
           const gameDoc = await getDoc(gameRef);
-          const isCompletedByPlayer = !!gameStore.gameProgress[tile.progressKey];
-          const isAvailable = gameDoc.exists() ? gameDoc.data().available !== false : true;
+          const isCompletedByPlayer = gameStore.gameProgress[tile.progressKey] === true;
 
-          tile.state = computeTileState(isAvailable, isCompletedByPlayer);
-          tile.available = tile.state === "available";
+          let isAvailable = true;
+          let lockedBy = null;
+          let lockedAtMs = null;
+
+          if (gameDoc.exists()) {
+            const data = gameDoc.data();
+            isAvailable = data.available !== false;
+            lockedBy = data.lockedBy ?? null;
+            if (data.lockedAt && typeof data.lockedAt.toMillis === 'function') {
+              lockedAtMs = data.lockedAt.toMillis();
+            }
+          }
+
+          if (!isAvailable) {
+            const now = Date.now();
+            const lockAge = lockedAtMs ? now - lockedAtMs : Number.POSITIVE_INFINITY;
+            const shouldRelease = !lockedBy || !lockedAtMs || lockAge > STALE_LOCK_MS || isCompletedByPlayer;
+
+            if (shouldRelease) {
+              try {
+                await updateDoc(gameRef, { available: true, lockedBy: null, lockedAt: null });
+                isAvailable = true;
+              } catch (releaseError) {
+                console.error("Fout bij automatisch vrijgeven van spel:", releaseError);
+              }
+            }
+          }
+
+          const nextState = computeTileState(isAvailable, isCompletedByPlayer);
+          if (tile.state !== nextState) {
+            tile.state = nextState;
+          }
+          const nextAvailable = nextState === "available";
+          if (tile.available !== nextAvailable) {
+            tile.available = nextAvailable;
+          }
         } catch (error) {
           console.error("Fout bij ophalen status van spel:", error);
-          const fallbackCompleted = !!gameStore.gameProgress[tile.progressKey];
-          tile.state = computeTileState(true, fallbackCompleted);
-          tile.available = tile.state === "available";
+          const fallbackCompleted = gameStore.gameProgress[tile.progressKey] === true;
+          const fallbackState = computeTileState(true, fallbackCompleted);
+          if (tile.state !== fallbackState) {
+            tile.state = fallbackState;
+          }
+          const fallbackAvailable = fallbackState === "available";
+          if (tile.available !== fallbackAvailable) {
+            tile.available = fallbackAvailable;
+          }
         }
+      }
+
+      if (gameStore.playerName && (enableProgress || progressReady.value)) {
+        progressReady.value = true;
+      } else if (!gameStore.playerName) {
+        progressReady.value = false;
       }
     };
 
@@ -201,7 +270,11 @@ export default {
       const gameRef = doc(db, "games", `game${tile.id}`);
 
       try {
-        await updateDoc(gameRef, { available: false });
+        await updateDoc(gameRef, {
+          available: false,
+          lockedBy: gameStore.playerName || null,
+          lockedAt: serverTimestamp()
+        });
         tile.state = "active";
         tile.available = false;
         router.push(`/game${tile.id}`);
@@ -228,25 +301,44 @@ export default {
     };
 
     const startGame = async () => {
-      if (!canStart.value) {
+      if (!canStart.value || isCheckingName.value) {
         return;
       }
 
       playerName.value = playerName.value.trim();
-      gameStore.setPlayerName(playerName.value);
-
-      const code = await getRandomVaultCode();
-      if (!code) {
-        alert("Kon geen kluiscode ophalen. Probeer opnieuw.");
+      if (!playerName.value) {
         return;
       }
 
-      vaultCode.value = code;
-      gameStore.vaultCode = code;
-      localStorage.setItem("vaultCode", code);
+      isCheckingName.value = true;
+      duplicateNotice.value = '';
+      duplicateAgentName.value = '';
+      existingAgent.value = null;
+      progressReady.value = false;
 
       try {
         const gameInstanceRef = collection(db, "gameinstances");
+        const existingQuery = query(gameInstanceRef, where("name", "==", playerName.value));
+        const snapshot = await getDocs(existingQuery);
+
+        if (!snapshot.empty) {
+          existingAgent.value = snapshot.docs[0];
+          duplicateAgentName.value = playerName.value;
+          duplicateNotice.value = `Codenaam ${playerName.value} is al actief. Ben jij dit?`;
+          return;
+        }
+
+        gameStore.setPlayerName(playerName.value);
+
+        const code = await getRandomVaultCode();
+        if (!code) {
+          alert("Kon geen kluiscode ophalen. Probeer opnieuw.");
+          return;
+        }
+
+        vaultCode.value = code;
+        gameStore.vaultCode = code;
+        localStorage.setItem("vaultCode", code);
 
         await addDoc(gameInstanceRef, {
           name: gameStore.playerName,
@@ -259,22 +351,93 @@ export default {
           game5completed: false
         });
 
+        await fetchGameStatus(true);
+        progressReady.value = true;
         showPopup.value = false;
       } catch (error) {
         console.error("Fout bij opslaan gameinstance:", error);
+        duplicateNotice.value = "Er trad een fout op bij het starten van de missie. Probeer het opnieuw.";
+      } finally {
+        isCheckingName.value = false;
       }
+    };
+
+    const confirmExistingAgent = async () => {
+      if (!existingAgent.value) {
+        return;
+      }
+
+      isCheckingName.value = true;
+      progressReady.value = false;
+      try {
+        const trimmedName = playerName.value.trim();
+        const agentData = existingAgent.value.data ? existingAgent.value.data() : null;
+
+        gameStore.setPlayerName(trimmedName);
+        if (agentData) {
+          gameStore.setProgress(agentData);
+          gameStore.vaultCode = agentData.vaultCode || '';
+          localStorage.setItem("vaultCode", gameStore.vaultCode);
+        } else {
+          await gameStore.loadProgress();
+        }
+        vaultCode.value = gameStore.vaultCode;
+
+        await fetchGameStatus(true);
+        progressReady.value = true;
+        showPopup.value = false;
+        duplicateNotice.value = '';
+        duplicateAgentName.value = '';
+        existingAgent.value = null;
+      } catch (error) {
+        console.error("Fout bij het laden van de bestaande agent:", error);
+        duplicateNotice.value = "Kon de bestaande missie niet laden. Probeer het opnieuw.";
+      } finally {
+        isCheckingName.value = false;
+      }
+    };
+
+    const cancelExistingAgent = () => {
+      existingAgent.value = null;
+      duplicateAgentName.value = '';
+      duplicateNotice.value = 'Kies een andere codenaam, deze naam is al in gebruik.';
+      playerName.value = '';
+      progressReady.value = false;
     };
 
     const resetGames = async () => {
       try {
+        const resetFields = {
+          game1completed: false,
+          game2completed: false,
+          game3completed: false,
+          game4completed: false,
+          game5completed: false
+        };
+
+        if (gameStore.playerName) {
+          const gameInstanceRef = collection(db, "gameinstances");
+          const q = query(gameInstanceRef, where("name", "==", gameStore.playerName));
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            const agentDoc = querySnapshot.docs[0];
+            await updateDoc(agentDoc.ref, resetFields);
+          }
+        }
+
+        gameStore.resetProgress();
+        progressReady.value = false;
+
         for (const tile of tiles.value) {
           const gameRef = doc(db, "games", `game${tile.id}`);
-          await updateDoc(gameRef, { available: true });
-        }
-        tiles.value.forEach(tile => {
+          await updateDoc(gameRef, { available: true, lockedBy: null, lockedAt: null });
           tile.state = "available";
           tile.available = true;
-        });
+        }
+
+        await fetchGameStatus(true);
+        progressReady.value = true;
       } catch (error) {
         console.error("Fout bij het resetten van de spellen:", error);
       }
@@ -286,46 +449,62 @@ export default {
       popupIndex.value = 0;
       playerName.value = '';
       vaultCode.value = '';
+      progressReady.value = false;
     };
 
     const completedCount = computed(() => {
       const progress = gameStore.gameProgress || {};
-      return [
+      const flags = [
         progress.game1completed,
         progress.game2completed,
         progress.game3completed,
         progress.game4completed,
         progress.game5completed
-      ].filter(Boolean).length;
+      ];
+      return flags.filter(value => value === true).length;
     });
 
-    const allGamesCompleted = computed(() => completedCount.value === tiles.value.length);
+    const displayedCompletedCount = computed(() => (progressReady.value ? completedCount.value : 0));
+    const allGamesCompleted = computed(() => progressReady.value && displayedCompletedCount.value === tiles.value.length);
 
-    const visibleVaultCode = computed(() => {
-      const fullCode = gameStore.vaultCode || '';
-      if (!fullCode || fullCode.length !== 5) return '*****';
+    const CODE_LENGTH = 5;
+    const CODE_PLACEHOLDER = '•';
 
-      const progress = gameStore.gameProgress || {};
-      const count = [
-        progress.game1completed,
-        progress.game2completed,
-        progress.game3completed,
-        progress.game4completed,
-        progress.game5completed
-      ].filter(Boolean).length;
+    const rawVaultCode = computed(() => (gameStore.vaultCode || '').trim());
+    const paddedVaultCode = computed(() => rawVaultCode.value.padEnd(CODE_LENGTH, CODE_PLACEHOLDER).slice(0, CODE_LENGTH));
 
-      return fullCode
-        .split('')
-        .map((char, index) => (index < count ? char : '*'))
-        .join('');
+    const maskedVaultDigits = computed(() => {
+      if (!progressReady.value) {
+        return Array(CODE_LENGTH).fill(CODE_PLACEHOLDER);
+      }
+
+      return paddedVaultCode.value.split('').map((digit, index) => {
+        const hasValue = index < rawVaultCode.value.length && digit !== CODE_PLACEHOLDER;
+        return index < completedCount.value && hasValue ? digit : CODE_PLACEHOLDER;
+      });
     });
 
-    const vaultDigits = computed(() => visibleVaultCode.value.split(''));
-    const fullVaultDigits = computed(() => (gameStore.vaultCode || '*****').split(''));
+    const dialPositions = computed(() => {
+      const digits = maskedVaultDigits.value;
+      const total = digits.length || CODE_LENGTH;
+      const radius = 36;
+      return digits.map((_, index) => {
+        const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
+        const x = (50 + Math.cos(angle) * radius).toFixed(2);
+        const y = (50 + Math.sin(angle) * radius).toFixed(2);
+        return {
+          left: `${x}%`,
+          top: `${y}%`,
+          transform: 'translate(-50%, -50%)'
+        };
+      });
+    });
+
+    const fullVaultDigits = computed(() => paddedVaultCode.value.split(''));
     const canStart = computed(() => playerName.value.trim().length > 1);
 
     const progressPercent = computed(() => {
-      if (!tiles.value.length) return 0;
+      if (!tiles.value.length || !progressReady.value) return 0;
       return Math.round((completedCount.value / tiles.value.length) * 100);
     });
 
@@ -357,8 +536,26 @@ export default {
         showPopup.value = false;
       }
 
-      fetchGameStatus();
-      statusInterval = setInterval(fetchGameStatus, 2500);
+      fetchGameStatus(true);
+      statusInterval = setInterval(() => fetchGameStatus(), 2500);
+    });
+
+    watch(playerName, (value) => {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        duplicateNotice.value = '';
+        duplicateAgentName.value = '';
+        existingAgent.value = null;
+        progressReady.value = false;
+        return;
+      }
+
+      if (duplicateAgentName.value && trimmed !== duplicateAgentName.value) {
+        duplicateNotice.value = '';
+        duplicateAgentName.value = '';
+        existingAgent.value = null;
+        progressReady.value = false;
+      }
     });
 
     watch(
@@ -383,18 +580,25 @@ export default {
       selectGame,
       resetGames,
       startGame,
+      confirmExistingAgent,
+      cancelExistingAgent,
       gameStore,
       playerName,
       completedCount,
-      visibleVaultCode,
-      vaultDigits,
+      displayedCompletedCount,
+      maskedVaultDigits,
+      dialPositions,
       fullVaultDigits,
       allGamesCompleted,
       canStart,
       progressCircleStyle,
       switchPlayer,
       tileStatusLabel,
-      tileStatusClass
+      tileStatusClass,
+      duplicateNotice,
+      existingAgent,
+      isCheckingName,
+      progressReady
     };
   }
 };
@@ -473,6 +677,23 @@ export default {
   flex-wrap: wrap;
 }
 
+.snowowl__duplicate-notice {
+  margin: 0.75rem 0 0;
+  color: var(--warning-color);
+  font-weight: 600;
+  text-align: center;
+}
+
+.snowowl__duplicate-actions {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.snowowl__duplicate-actions .btn {
+  width: 100%;
+}
+
 .snowowl__dashboard {
   display: flex;
   flex-direction: column;
@@ -544,6 +765,72 @@ export default {
 .snowowl__vault {
   display: grid;
   gap: 0.75rem;
+  justify-items: center;
+  text-align: center;
+}
+
+
+.snowowl__vault-dial {
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 0.75rem 0 1.25rem;
+}
+
+.snowowl__vault-ring {
+  position: relative;
+  width: clamp(220px, 68vw, 280px);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  background: radial-gradient(circle at 50% 50%, rgba(124, 92, 255, 0.12), rgba(9, 13, 28, 0.92) 60%);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.45);
+}
+
+.snowowl__vault-ring::after {
+  content: '';
+  position: absolute;
+  inset: 16%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 18px rgba(124, 92, 255, 0.3);
+  opacity: 0.7;
+}
+
+.snowowl__vault-ring .snowowl__vault-digit {
+  position: absolute;
+  width: clamp(44px, 13vw, 54px);
+  height: clamp(44px, 13vw, 54px);
+  font-size: 1.35rem;
+  pointer-events: none;
+}
+
+.snowowl__vault-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  gap: 0.2rem;
+  padding: 0.75rem 1rem;
+  border-radius: 50%;
+  background: rgba(3, 6, 18, 0.92);
+  border: 1px solid rgba(124, 92, 255, 0.22);
+  box-shadow: 0 0 25px rgba(124, 92, 255, 0.25);
+}
+
+.snowowl__vault-core-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.snowowl__vault-core strong {
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
 }
 
 .snowowl__vault-header {
@@ -577,6 +864,10 @@ export default {
   color: #fff;
   border-color: rgba(124, 92, 255, 0.35);
   background: rgba(124, 92, 255, 0.15);
+  box-shadow: 0 0 12px rgba(124, 92, 255, 0.35);
+}
+
+.snowowl__vault-digits .snowowl__vault-digit.is-revealed {
   transform: translateY(-3px);
 }
 
@@ -693,6 +984,47 @@ export default {
   justify-content: center;
 }
 
+@media (max-width: 640px) {
+  .snowowl__welcome {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.25rem;
+  }
+
+  .snowowl__welcome .btn {
+    width: 100%;
+  }
+
+  .snowowl__status {
+    gap: 1.25rem;
+  }
+
+  .snowowl__progress {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .snowowl__progress-copy {
+    text-align: center;
+  }
+
+  .snowowl__vault {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .snowowl__vault-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+  }
+
+  .snowowl__vault-ring {
+    width: min(240px, 80vw);
+  }
+}
 @media (min-width: 768px) {
   .snowowl__intro {
     grid-template-columns: 1fr 1fr;
@@ -721,3 +1053,5 @@ export default {
   }
 }
 </style>
+
+

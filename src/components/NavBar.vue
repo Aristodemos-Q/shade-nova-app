@@ -1,5 +1,5 @@
 <template>
-  <header class="navbar" :class="{ 'navbar--active': gameStore.playerName }">
+  <header ref="navbarRef" class="navbar" :class="{ 'navbar--active': gameStore.playerName }">
     <div class="navbar__brand">
       <div class="navbar__logo shadow-ring">
         <img :src="logo" alt="S.H.A.D.E logo" />
@@ -30,49 +30,64 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, nextTick } from "vue";
 import { useGameStore } from "../stores/gameStore";
 import logo from "@/assets/logo.png";
 
 export default {
   setup() {
     const gameStore = useGameStore();
+    const navbarRef = ref(null);
+    let resizeObserver = null;
 
-    // Bereken het aantal voltooide spellen
     const completedGames = computed(() => {
-      const progress = gameStore.gameProgress || {}; // Voorkom undefined errors
+      const progress = gameStore.gameProgress || {};
       return [
         progress.game1completed,
         progress.game2completed,
         progress.game3completed,
         progress.game4completed,
         progress.game5completed
-      ].filter(Boolean).length;
+      ].filter(value => value === true).length;
     });
 
-    const progressPercent = computed(() => {
-      return Math.round((completedGames.value / 5) * 100);
-    });
+    const progressPercent = computed(() => Math.round((completedGames.value / 5) * 100));
 
     const playerInitial = computed(() => {
       if (!gameStore.playerName) return "?";
       return gameStore.playerName.charAt(0).toUpperCase();
     });
 
-    let interval = ref(null);
+    const intervalId = ref(null);
+
+    const updateNavbarHeight = () => {
+      if (navbarRef.value) {
+        document.documentElement.style.setProperty("--navbar-height", `${navbarRef.value.offsetHeight}px`);
+      }
+    };
 
     onMounted(() => {
-      // 🚀 Elke 3 seconden checken of er een update is
-      interval.value = setInterval(() => {
-        gameStore.loadProgress(); // 🔄 Ophalen van nieuwe data
+      nextTick(() => {
+        updateNavbarHeight();
+        resizeObserver = new ResizeObserver(() => updateNavbarHeight());
+        if (navbarRef.value) {
+          resizeObserver.observe(navbarRef.value);
+        }
+      });
+
+      intervalId.value = setInterval(() => {
+        gameStore.loadProgress();
       }, 3000);
     });
 
     onUnmounted(() => {
-      clearInterval(interval.value); // ❌ Voorkom geheugenlekken
+      clearInterval(intervalId.value);
+      if (resizeObserver && navbarRef.value) {
+        resizeObserver.disconnect();
+      }
     });
 
-    return { gameStore, completedGames, progressPercent, playerInitial, logo };
+    return { gameStore, completedGames, progressPercent, playerInitial, logo, navbarRef };
   },
 };
 </script>
@@ -218,22 +233,44 @@ export default {
 
 @media (max-width: 720px) {
   .navbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 18px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 14px 16px;
+  }
+
+  .navbar__brand {
+    flex: 1 1 auto;
   }
 
   .navbar__status {
-    width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
+    flex: 1 1 auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 0.75rem;
+    width: auto;
+  }
+
+  .navbar__agent {
+    padding: 0.45rem 0.7rem;
   }
 
   .navbar__progress {
-    width: 100%;
-    min-width: unset;
+    flex: 0 1 140px;
+    min-width: 0;
+  }
+
+  .navbar__progress-text {
+    display: none;
+  }
+
+  .navbar__label {
+    display: none;
   }
 }
 </style>
+
+

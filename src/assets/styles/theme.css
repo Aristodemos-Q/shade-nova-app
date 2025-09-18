@@ -21,6 +21,7 @@
   --radius-lg: 24px;
   --radius-md: 18px;
   --radius-sm: 12px;
+  --navbar-height: 96px;
   --gap-lg: 2.75rem;
   --gap-md: 1.75rem;
   --gap-sm: 1rem;
@@ -284,3 +285,4 @@ button:disabled {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+

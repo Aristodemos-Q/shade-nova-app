@@ -42,7 +42,7 @@
         />
         <button class="btn" @click="submitCode">Verzenden</button>
       </div>
-      <p v-if="message" class="mission__feedback" :class="{ 'is-error': message.includes('❌') }">{{ message }}</p>
+      <p v-if="message" class="mission__feedback" :class="{ 'is-error': messageIsError }">{{ message }}</p>
     </section>
 
     <section class="mission__panel card" v-else-if="step === 3">
@@ -66,6 +66,7 @@ export default {
       step: 0,
       code: "",
       message: "",
+      messageIsError: false,
       gameStore: useGameStore(),
       router: useRouter(),
       heroImage: new URL('@/assets/game2/agentfromage1.png', import.meta.url).href
@@ -75,7 +76,7 @@ export default {
     if (!this.gameStore.gameProgress.game2completed) {
       try {
         const gameRef = doc(db, "games", "game2");
-        await updateDoc(gameRef, { available: true });
+        await updateDoc(gameRef, { available: true, lockedBy: null, lockedAt: null });
       } catch (error) {
         console.error("Fout bij het vrijgeven van game2:", error);
       }
@@ -91,7 +92,8 @@ export default {
     },
     async submitCode() {
       if (this.code.trim() === "8630") {
-        this.message = "✅ Code correct! De hack is voltooid.";
+        this.message = "Code correct! De hack is voltooid.";
+        this.messageIsError = false;
 
         this.gameStore.completeGame("game2completed");
 
@@ -105,7 +107,7 @@ export default {
             await updateDoc(playerDoc.ref, { game2completed: true });
 
             const gameRef = doc(db, "games", "game2");
-            await updateDoc(gameRef, { available: true });
+            await updateDoc(gameRef, { available: true, lockedBy: null, lockedAt: null });
           }
         } catch (error) {
           console.error("Fout bij updaten van Firestore:", error);
@@ -116,7 +118,8 @@ export default {
           this.router.push("/snowowl");
         }, 2000);
       } else {
-        this.message = "❌ Foute code, probeer opnieuw.";
+        this.message = "Foute code, probeer het opnieuw.";
+        this.messageIsError = true;
       }
     },
     goToSnowOwl() {
@@ -197,6 +200,31 @@ export default {
 
 .mission__feedback.is-error {
   color: var(--danger-color);
+}
+
+@media (max-width: 640px) {
+  .mission__code-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .mission__code-group .btn {
+    width: 100%;
+  }
+
+  .mission__code-group input {
+    width: 100%;
+  }
+
+  .mission__step-controls {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .mission__step-controls .btn {
+    width: 100%;
+  }
 }
 
 @media (min-width: 768px) {
