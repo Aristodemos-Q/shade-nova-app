@@ -104,9 +104,9 @@ export default {
     const tiles = ref([
       { id: 1, name: "Spel 1", img: new URL('@/assets/dimensions-collapsing.png', import.meta.url).href, title: "CyberClues", skill: "Digitaal onderzoek", available: true },
       { id: 2, name: "Spel 2", img: new URL('@/assets/Memory.png', import.meta.url).href, title: "Memory", skill: "Geheugen & concentratie", available: true },
-      { id: 3, name: "Spel 3", img: new URL('@/assets/laser-lockdown.png', import.meta.url).href, title: "Flappy Wifi", skill: "Reactievermogen", available: true },
-      { id: 4, name: "Spel 4", img: new URL('@/assets/feel-it.png', import.meta.url).href, title: "Zombie Licious", skill: "Strategisch denken", available: true },
-      { id: 5, name: "Spel 5", img: new URL('@/assets/dead-body.png', import.meta.url).href, title: "Mario Survive", skill: "Overleven & aanpassen", available: true }
+      { id: 3, name: "Spel 3", img: new URL('@/assets/Flappywifi.png', import.meta.url).href, title: "Flappy Wifi", skill: "Reactievermogen", available: true },
+      { id: 4, name: "Spel 4", img: new URL('@/assets/Zombierserv.png', import.meta.url).href, title: "Zombie Licious", skill: "Strategisch denken", available: true },
+      { id: 5, name: "Spel 5", img: new URL('@/assets/Marioserv.png', import.meta.url).href, title: "Mario Survive", skill: "Overleven & aanpassen", available: true }
     ]);
 
     // Ga naar de volgende popup

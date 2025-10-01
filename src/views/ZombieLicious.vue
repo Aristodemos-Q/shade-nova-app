@@ -1,37 +1,39 @@
 <template>
   <div class="game-container">
     <div class="game-page">
-      <h1>🧟‍♂️ ZOMBIE LICIOUS - SURVIVAL PROTOCOL 🧠</h1>
+      <h1>🧟‍♂️ ZOMBIE LICIOUS - SURVIVAL PROTOCOL</h1>
+      
       <div class="mission-briefing">
-        <p class="location">📍 <strong>Locatie:</strong> 2.09 - Overlevingscommandopost - Tactisch Operatiecentrum</p>
-        <p class="threat-level">⚠️ <strong>Dreiging Niveau:</strong> KRITIEK - Zombie Uitbraak Gedetecteerd</p>
-        <p class="objective">🎯 <strong>Primaire Missie:</strong> Ontwikkel strategische overlevingsplannen</p>
+        <p class="location"><strong>Locatie:</strong> 2.09 - Overlevingscommandopost</p>
+        <p class="objective"><strong>Missie:</strong> Overleef</p>
       </div>
-      
-      <div class="tactical-instructions">
-        <h3>🛡️ Tactische Instructies:</h3>
-        <ul>
-          <li>📦 Verzamel en beheer schaarse resources efficient</li>
-          <li>🏗️ Bouw strategische verdedigingsposten tegen zombie hordes</li>
-          <li>⚔️ Plan aanvalsroutes en vluchtstrategieën</li>
-          <li>🧪 Onderzoek zombie zwakheden voor tactisch voordeel</li>
-          <li>🤝 Coördineer met andere overlevenden voor maximale effectiviteit</li>
-        </ul>
-      </div>
-      
-      <div class="code-input-section">
-        <h3>🔐 Overlevings-Authenticatie Protocol</h3>
-        <p>Voer je verdiende strategische toegangscode in:</p>
-        <input v-model="enteredCode" type="text" placeholder="🧟 Survival Access Code..." class="tactical-input" />
-        <button @click="checkCode" class="tactical-button">🚀 Execute Protocol</button>
+
+      <div class="survival-challenge">
+        <h3>🛡️ Zombie Survival Navigation Protocol</h3>
+        <div class="instructions">
+          <p><strong>🧟‍♂️ Concept:</strong> Schiet de horders zombie's met je shotgun neer.</p>
+          <p><strong>⚔️ Strategieën:</strong> Richt goed en kies de goede timing.</p>
+          <p><strong>🎯 Doel:</strong> Behaal wave 5!</p>
+        </div>
+        
+        <div class="code-input-section">
+          <p class="instruction">Voer de overlevings-toegangscode in:</p>
+          <div class="survival-access-container">
+            <input 
+              v-model="enteredCode" 
+              type="text" 
+              placeholder="Code..." 
+              class="code-input"
+              @keyup.enter="checkCode"
+            />
+            <button @click="checkCode" class="survive-button">EXECUTE SURVIVAL</button>
+          </div>
+        </div>
       </div>
       
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+      <p v-if="successMessage" class="success">{{ successMessage }}</p>
     </div>
-    <!-- <div class="game-images">
-      <img :src="gameimages[0]" class="gameimage" />
-      <img :src="gameimages[1]" class="gameimage" />
-    </div> -->
   </div>
 </template>
 
@@ -42,11 +44,13 @@ import { db } from "@/firebase";
 import { updateDoc, query, where, getDocs, collection, doc } from "firebase/firestore";
 
 export default {
+  name: "ZombieLicious",
   data() {
     return {
-      correctCode: "SURVIVE", // Strategic survival code
+      correctCode: "12345",
       enteredCode: "",
       errorMessage: "",
+      successMessage: "",
       gameimages: [new URL('@/assets/game4/bom.png', import.meta.url).href, new URL('@/assets/game4/bom2.png', import.meta.url).href]
     };
   },
@@ -59,7 +63,10 @@ export default {
   methods: {
     async checkCode() {
       if (this.enteredCode.toUpperCase() === this.correctCode) {
-        // 🔹 Update voortgang in Pinia store en Firestore
+        this.successMessage = "🎉 Overleving succesvol! Survival protocol voltooid!";
+        this.errorMessage = "";
+        
+        // Update voortgang in Pinia store en Firestore
         this.gameStore.completeGame("game4completed");
 
         try {
@@ -71,7 +78,7 @@ export default {
             const playerDoc = querySnapshot.docs[0];
             await updateDoc(playerDoc.ref, { game4completed: true });
 
-            // 🔹 Zet het spel opnieuw beschikbaar
+            // Zet het spel opnieuw beschikbaar
             const gameRef = doc(db, "games", "game4");
             await updateDoc(gameRef, { available: true });
           } else {
@@ -81,12 +88,13 @@ export default {
           console.error("Fout bij updaten van Firestore:", error);
         }
 
-        // 🔹 Stuur speler na 2 seconden naar /snowowl
+        // Stuur speler na 2 seconden naar /snowowl
         setTimeout(() => {
           this.router.push("/snowowl");
         }, 2000);
       } else {
-        this.errorMessage = "Verkeerde code... het mysterie blijft onopgelost.";
+        this.errorMessage = "Overleving mislukt! Controleer je survival toegangscode.";
+        this.successMessage = "";
       }
     }
   }
@@ -95,9 +103,8 @@ export default {
 
 <style scoped>
 .game-container {
-  /* background: url('@/assets/background.jpg') no-repeat center center fixed; */
-  margin-top:5vh;
-  background: #111;
+  padding: 20px;
+  background: linear-gradient(135deg, #0a2200 0%, #1a4000 50%, #0d2a00 100%);
   background-size: cover;
   min-height: 100vh;
   display: flex;
@@ -107,127 +114,190 @@ export default {
 }
 
 .game-page {
-  text-align: left;
+  text-align: center;
   padding: 30px;
-  background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 50%, #0d0d0d 100%);
+  background: linear-gradient(135deg, #1a1a00 0%, #2d4000 50%, #1a2200 100%);
   color: #ff6b35;
   font-family: 'Orbitron', sans-serif;
-  border: 3px solid #ff6b35;
-  box-shadow: 0 0 25px #ff6b35, inset 0 0 15px rgba(255, 107, 53, 0.1);
+  border: 4px solid #ff6b35;
+  box-shadow: 0 0 30px #ff6b35, inset 0 0 20px rgba(255, 107, 53, 0.1);
   max-width: 700px;
   margin: 30px;
-  border-radius: 15px;
+  border-radius: 20px;
   position: relative;
   z-index: 2;
 }
 
 .game-page h1 {
-  text-align: center;
   color: #ff6b35;
   text-shadow: 0 0 20px #ff6b35;
   margin-bottom: 25px;
   font-size: 2.2em;
+  font-weight: bold;
 }
 
 .mission-briefing {
   background: rgba(255, 107, 53, 0.1);
   padding: 20px;
-  border-radius: 10px;
-  border: 1px solid #ff6b35;
+  border-radius: 15px;
+  border: 2px solid #ff6b35;
   margin: 20px 0;
+  text-align: left;
 }
 
-.location, .threat-level, .objective {
-  margin: 10px 0;
+.location, .objective {
+  margin: 12px 0;
   font-size: 1.1em;
 }
 
-.tactical-instructions {
+.survival-challenge {
   background: rgba(0, 0, 0, 0.3);
-  padding: 20px;
-  border-radius: 10px;
-  border-left: 5px solid #ff6b35;
+  padding: 25px;
+  border-radius: 15px;
+  border-left: 6px solid #ff6b35;
+  margin: 25px 0;
+  text-align: left;
+}
+
+.survival-challenge h3 {
+  color: #ff6b35;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 1.4em;
+}
+
+.instructions {
   margin: 20px 0;
 }
 
-.tactical-instructions h3 {
-  color: #ff6b35;
-  margin-bottom: 15px;
-}
-
-.tactical-instructions ul {
-  list-style: none;
-  padding: 0;
-}
-
-.tactical-instructions li {
-  margin: 8px 0;
-  padding: 5px 0;
-  border-bottom: 1px solid rgba(255, 107, 53, 0.3);
+.instructions p {
+  margin: 12px 0;
+  line-height: 1.6;
+  background: rgba(255, 107, 53, 0.05);
+  padding: 10px;
+  border-radius: 8px;
+  border-left: 3px solid #ff6b35;
 }
 
 .code-input-section {
-  text-align: center;
-  background: rgba(255, 107, 53, 0.05);
-  padding: 25px;
-  border-radius: 10px;
+  background: rgba(255, 107, 53, 0.08);
+  padding: 30px;
+  border-radius: 15px;
   margin: 25px 0;
-}
-
-.code-input-section h3 {
-  color: #ff6b35;
-  margin-bottom: 15px;
-}
-
-.tactical-input {
-  margin: 15px 10px;
-  padding: 15px;
-  border: 2px solid #ff6b35;
-  background-color: #1a1a1a;
-  color: white;
-  font-size: 1.2em;
+  border: 3px solid #ff6b35;
   text-align: center;
-  border-radius: 8px;
-  font-weight: bold;
 }
 
-.tactical-input:focus {
-  outline: none;
-  box-shadow: 0 0 15px #ff6b35;
-}
-
-.tactical-button {
-  padding: 15px 25px;
-  background: linear-gradient(135deg, #ff6b35, #ff4500);
-  color: white;
-  border: none;
-  cursor: pointer;
+.instruction {
+  margin-bottom: 25px;
   font-size: 1.2em;
-  border-radius: 8px;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
+  color: #ff6b35;
+  text-shadow: 0 0 10px #ff6b35;
 }
 
-.tactical-button:hover {
-  background: linear-gradient(135deg, #ff4500, #ff6b35);
-  box-shadow: 0 0 20px #ff6b35;
+.survival-access-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto;
+}
+
+.survival-access-container .code-input,
+.survival-access-container .survive-button {
+  width: 100%;
+}
+
+.code-input {
+  padding: 14px 18px;
+  border: 2px solid #ff6b35;
+  background-color: rgba(26, 64, 0, 0.85);
+  color: #E0F0E8;
+  font-size: 1.05em;
+  text-align: center;
+  border-radius: 12px;
+  font-weight: 600;
+  width: 230px;
+  height: 52px;
+  box-sizing: border-box;
+  letter-spacing: 1px;
+  line-height: 1.2;
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.25);
+}
+
+.code-input:focus {
+  outline: none;
+  box-shadow: 0 0 25px #ff6b35, inset 0 0 15px rgba(255, 107, 53, 0.2);
+  background-color: rgba(45, 64, 0, 0.9);
+  color: white;
+}
+
+.survive-button {
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #ff6b35, #cc3300);
+  color: white;
+  border: 2px solid #ff6b35;
+  cursor: pointer;
+  font-size: 1.05em;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: all 0.25s ease;
+  text-transform: uppercase;
+  white-space: nowrap;
+  width: 230px;
+  height: 52px;
+  box-sizing: border-box;
+  box-shadow: 0 0 14px rgba(255, 107, 53, 0.35);
+  font-family: 'Orbitron', sans-serif;
+}
+
+.survive-button:hover {
+  background: linear-gradient(135deg, #cc3300, #ff6b35);
+  box-shadow: 0 0 18px #ff6b35, 0 0 30px rgba(255, 107, 53, 0.25);
   transform: translateY(-2px);
 }
 
 .error {
-  color: yellow;
-  margin-top: 10px;
+  color: #FF6B6B;
   font-weight: bold;
+  margin-top: 15px;
+  background: rgba(255, 107, 107, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #FF6B6B;
 }
-.gameimages {
-  display: flex;
-  flex-direction: column;
+
+.success {
+  color: #4CAF50;
+  font-weight: bold;
+  margin-top: 15px;
+  background: rgba(76, 175, 80, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #4CAF50;
 }
-.gameimage {
-  max-width: 80%;
-  border:#000000;
-  border-radius: 10px;
-  margin: 10px;
+
+@media (max-width: 600px) {
+  .input-container {
+    max-width: 280px;
+  }
+  
+  .code-input {
+    width: 100%;
+    max-width: 280px;
+  }
+  
+  .survive-button {
+    width: 100%;
+    max-width: 280px;
+  }
+  
+  .game-page {
+    padding: 20px;
+    margin: 15px;
+  }
 }
 </style>

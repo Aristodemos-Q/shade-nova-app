@@ -1,46 +1,38 @@
 <template>
   <div class="game-container">
     <div class="game-page">
-      <h1>MARIO SURVIVE - ADAPTATIE CHALLENGE</h1>
+      <h1>🍄 MARIO SURVIVE</h1>
       
-      <div class="world-briefing">
-        <p class="location"><strong>Locatie:</strong> 2.09 - Retro Gaming Arena - Platform Survival Zone</p>
-        <p class="challenge-level"><strong>Challenge Niveau:</strong> Dynamische Aanpassingstest</p>
-        <p class="objective"><strong>Ultimate Goal:</strong> Bewijs je overlevingsinstinct in veranderende omgevingen</p>
+      <div class="mission-briefing">
+        <p class="location"><strong>Locatie:</strong> 2.09 - Retro Gaming Arena</p>
+        <p class="objective"><strong>Missie:</strong> Overleven voor 1 minuut</p>
       </div>
-      
-      <div class="survival-mechanics">
-        <h3>Overlevings Mechanica:</h3>
-        <div class="mechanics-grid">
-          <div class="mechanic-item">
-            <span class="icon">🏃‍♂️</span>
-            <strong>Mobiliteit:</strong> Spring over gaten en platformen met perfecte timing
-          </div>
-          <div class="mechanic-item">
-            <span class="icon">👾</span>
-            <strong>Vijand Ontwijking:</strong> Vermijd Goombas, Koopa's en andere bedreigingen
-          </div>
-          <div class="mechanic-item">
-            <span class="icon">⚡</span>
-            <strong>Power-Up Beheer:</strong> Strategisch gebruik van mushrooms en sterren
-          </div>
-          <div class="mechanic-item">
-            <span class="icon">🧩</span>
-            <strong>Omgeving Aanpassing:</strong> Pas je strategie aan per level type
-          </div>
+
+      <div class="mario-challenge">
+        <h3>🎮 Mario Survival Protocol</h3>
+        <div class="instructions">
+          <p><strong>🏃‍♂️ Concept:</strong> Mario probeert het lava en vallende dingen te ontwijken terwijl je probeert 1 minuut te overleven.</p>
+          <p><strong>� Controles:</strong> Gebruik platforming skills en timing om alle bedreigingen te vermijden en in leven te blijven.</p>
+          <p><strong>⭐ Doel:</strong> Overleef precies 1 minuut zonder een leven te verliezen!</p>
         </div>
-      </div>
-      
-      <div class="power-up-section">
-        <h3>Power-Up Activatie Protocol</h3>
-        <p>Verdien je Super Mario survival badge door de authenticatiecode in te voeren:</p>
-        <div class="input-container">
-          <input v-model="enteredCode" type="text" placeholder="Power-Up Access Code..." class="mario-input" />
-          <button @click="checkCode" class="mario-button">Level Up!</button>
+        
+        <div class="code-input-section">
+          <p class="instruction">Voer de survival-code in:</p>
+          <div class="mario-access-container">
+            <input 
+              v-model="enteredCode" 
+              type="text" 
+              placeholder="Code..." 
+              class="code-input"
+              @keyup.enter="checkCode"
+            />
+            <button @click="checkCode" class="connect-button">POWER UP!</button>
+          </div>
         </div>
       </div>
       
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+      <p v-if="successMessage" class="success">{{ successMessage }}</p>
     </div>
   </div>
 </template>
@@ -52,11 +44,13 @@ import { db } from "@/firebase";
 import { updateDoc, query, where, getDocs, collection, doc } from "firebase/firestore";
 
 export default {
+  name: "MarioSurvive",
   data() {
     return {
-      correctCode: "ADAPT", // Mario adaptation survival code
+      correctCode: "12345",
       enteredCode: "",
       errorMessage: "",
+      successMessage: "",
       gameimages: [new URL('@/assets/game5/ar1.png', import.meta.url).href, new URL('@/assets/game5/ar2.png', import.meta.url).href]
     };
   },
@@ -69,6 +63,9 @@ export default {
   methods: {
     async checkCode() {
       if (this.enteredCode.toUpperCase() === this.correctCode) {
+        this.successMessage = "🎉 Power-Up geactiveerd! Mario survival challenge voltooid!";
+        this.errorMessage = "";
+        
         // Update voortgang in Pinia store en Firestore
         this.gameStore.completeGame("game5completed");
 
@@ -96,7 +93,8 @@ export default {
           this.router.push("/snowowl");
         }, 2000);
       } else {
-        this.errorMessage = "Onjuiste code! Probeer je beter aan te passen aan de uitdaging!";
+        this.errorMessage = "Game Over! Controleer je survival-code en probeer opnieuw.";
+        this.successMessage = "";
       }
     }
   }
@@ -106,7 +104,7 @@ export default {
 <style scoped>
 .game-container {
   padding: 20px;
-  background: linear-gradient(135deg, #FFD700 0%, #FF8C00 50%, #FF4500 100%);
+  background: linear-gradient(135deg, #8B4513 0%, #228B22 50%, #FF6347 100%);
   background-size: cover;
   min-height: 100vh;
   display: flex;
@@ -118,7 +116,7 @@ export default {
 .game-page {
   text-align: center;
   padding: 30px;
-  background: linear-gradient(135deg, #1a4c96 0%, #2e7d32 50%, #1565c0 100%);
+  background: linear-gradient(135deg, #8B0000 0%, #228B22 50%, #654321 100%);
   color: #FFD700;
   font-family: 'Orbitron', sans-serif;
   border: 4px solid #FFD700;
@@ -138,7 +136,7 @@ export default {
   font-weight: bold;
 }
 
-.world-briefing {
+.mission-briefing {
   background: rgba(255, 215, 0, 0.1);
   padding: 20px;
   border-radius: 15px;
@@ -147,12 +145,12 @@ export default {
   text-align: left;
 }
 
-.location, .challenge-level, .objective {
+.location, .objective {
   margin: 12px 0;
   font-size: 1.1em;
 }
 
-.survival-mechanics {
+.mario-challenge {
   background: rgba(0, 0, 0, 0.3);
   padding: 25px;
   border-radius: 15px;
@@ -161,85 +159,105 @@ export default {
   text-align: left;
 }
 
-.survival-mechanics h3 {
+.mario-challenge h3 {
   color: #FFD700;
   margin-bottom: 20px;
   text-align: center;
   font-size: 1.4em;
 }
 
-.mechanics-grid {
-  display: grid;
-  gap: 15px;
+.instructions {
+  margin: 20px 0;
 }
 
-.mechanic-item {
-  padding: 15px;
+.instructions p {
+  margin: 12px 0;
+  line-height: 1.6;
   background: rgba(255, 215, 0, 0.05);
-  border-radius: 10px;
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  padding: 10px;
+  border-radius: 8px;
+  border-left: 3px solid #FFD700;
 }
 
-.mechanic-item .icon {
-  font-size: 1.5em;
-  margin-right: 10px;
-}
-
-.power-up-section {
+.code-input-section {
   background: rgba(255, 215, 0, 0.08);
   padding: 30px;
   border-radius: 15px;
   margin: 25px 0;
   border: 3px solid #FFD700;
+  text-align: center;
 }
 
-.power-up-section h3 {
-  color: #FFD700;
-  margin-bottom: 15px;
-  font-size: 1.4em;
-}
-
-.input-container {
-  margin: 20px 0;
-}
-
-.mario-input {
-  margin: 15px 10px;
-  padding: 15px;
-  border: 3px solid #FFD700;
-  background-color: #1a4c96;
-  color: white;
+.instruction {
+  margin-bottom: 25px;
   font-size: 1.2em;
+  color: #FFD700;
+  text-shadow: 0 0 10px #FFD700;
+}
+
+.mario-access-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto;
+}
+
+.mario-access-container .code-input,
+.mario-access-container .connect-button {
+  width: 100%;
+}
+
+.code-input {
+  padding: 14px 18px;
+  border: 2px solid #FFD700;
+  background-color: rgba(139, 0, 0, 0.85);
+  color: #E0E8F0;
+  font-size: 1.05em;
   text-align: center;
   border-radius: 12px;
-  font-weight: bold;
-  width: 250px;
+  font-weight: 600;
+  width: 230px;
+  height: 52px;
+  box-sizing: border-box;
+  letter-spacing: 1px;
+  line-height: 1.2;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.25);
 }
 
-.mario-input:focus {
+.code-input:focus {
   outline: none;
-  box-shadow: 0 0 20px #FFD700;
-  background-color: #2e7d32;
-}
-
-.mario-button {
-  padding: 15px 30px;
-  background: linear-gradient(135deg, #FF8C00, #FF4500);
+  box-shadow: 0 0 25px #FFD700, inset 0 0 15px rgba(255, 215, 0, 0.2);
+  background-color: rgba(34, 139, 34, 0.9);
   color: white;
-  border: 3px solid #FFD700;
-  cursor: pointer;
-  font-size: 1.3em;
-  border-radius: 12px;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  margin-left: 10px;
 }
 
-.mario-button:hover {
+.connect-button {
+  padding: 14px 18px;
   background: linear-gradient(135deg, #FF4500, #FF8C00);
-  box-shadow: 0 0 25px #FFD700;
-  transform: translateY(-3px);
+  color: white;
+  border: 2px solid #FFD700;
+  cursor: pointer;
+  font-size: 1.05em;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: all 0.25s ease;
+  text-transform: uppercase;
+  white-space: nowrap;
+  width: 230px;
+  height: 52px;
+  box-sizing: border-box;
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.35);
+  font-family: 'Orbitron', sans-serif;
+}
+
+.connect-button:hover {
+  background: linear-gradient(135deg, #FF8C00, #FF4500);
+  box-shadow: 0 0 18px #FFD700, 0 0 30px rgba(255, 215, 0, 0.25);
+  transform: translateY(-2px);
 }
 
 .error {
@@ -250,5 +268,36 @@ export default {
   padding: 10px;
   border-radius: 8px;
   border: 1px solid #FF6B6B;
+}
+
+.success {
+  color: #4CAF50;
+  font-weight: bold;
+  margin-top: 15px;
+  background: rgba(76, 175, 80, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #4CAF50;
+}
+
+@media (max-width: 600px) {
+  .input-container {
+    max-width: 280px;
+  }
+  
+  .code-input {
+    width: 100%;
+    max-width: 280px;
+  }
+  
+  .connect-button {
+    width: 100%;
+    max-width: 280px;
+  }
+  
+  .game-page {
+    padding: 20px;
+    margin: 15px;
+  }
 }
 </style>

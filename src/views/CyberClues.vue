@@ -85,7 +85,7 @@ export default {
     return {
       letters: Array(5).fill(""),
       wordInput: "",
-      correctWord: "CYBER",
+      correctWord: "12345",
       message: "",
       isCorrect: false,
       justFound: null,
@@ -108,19 +108,19 @@ export default {
       const word = this.wordInput.toUpperCase();
       
       if (!word) {
-        this.message = "Voer eerst een woord in!";
+        this.message = "Voer eerst een code in!";
         this.isCorrect = false;
         return;
       }
       
       if (word.length !== this.correctWord.length) {
-        this.message = `Je woord moet uit ${this.correctWord.length} letters bestaan.`;
+        this.message = `Je code moet uit ${this.correctWord.length} karakters bestaan.`;
         this.isCorrect = false;
         return;
       }
       
       if (word === this.correctWord) {
-        this.message = "Gefeliciteerd! Je hebt het geheime woord ontdekt en kunt nu verder gaan!";
+        this.message = "Gefeliciteerd! Je hebt de juiste code ingevoerd en kunt nu verder gaan!";
         this.isCorrect = true;
         this.triggerConfetti();
         this.gameStore.gameProgress.game1completed = true;
@@ -153,7 +153,7 @@ export default {
           this.router.push("/snowowl"); // 🔹 Stuur speler naar /snowowl
         }, 1000);
       } else {
-        this.message = "Dat is niet het juiste woord. Probeer het nog eens!";
+        this.message = "Dat is niet de juiste code. Probeer het nog eens!";
         this.isCorrect = false;
         this.shakeWordInput();
       }
