@@ -4,11 +4,11 @@
     <div class="twinkling"></div>
     
     <div class="game-header">
-      <h1 class="title">Dimensions collapsing</h1>
+      <h1 class="title">🔍 CyberClues - Digitaal Onderzoek</h1>
       <div class="instructions">
-        <p>Loop naar het grote digibord op het leerplein om te beginnen met het spel</p>
-        <p>Op het digibord staat een digitale versie van ons leerplein.</p>
-        <p class="instruction-detail">Zoek de verschillen tussen het spel en de echte wereld. Vind de 5 verborgen letters in de echte wereld! De gevonden letters kan je opslaan hieronder. Uiteindelijk moet je een woord maken van de 5 letters.</p>
+        <p class="location-info">📍 <strong>Locatie:</strong> 2.09 - Cybersecurity Lab - Forensische Werkstation</p>
+        <p class="objective">🎯 <strong>Missie:</strong> Analyseer de gehackte systemen en verzamel digitale bewijzen</p>
+        <p class="instruction-detail">🔬 Gebruik forensische tools om verborgen bestanden te ontdekken, metadata te analyseren, en netwerklogboeken te onderzoeken. Vind de 5 sleutelfragmenten in de cyberwereld! Elke fragment bevat een cruciaal bewijs. Combineer ze tot de ontsleutelingscode.</p>
       </div>
       <!-- <div class="game-images">
         <img :src="gameimages[0]" class="gameimage" />
@@ -35,24 +35,24 @@
     
     <div class="word-submission">
       <div class="word-submission-header">
-        <h2 class="section-title">Maak het woord</h2>
+        <h2 class="section-title">💻 Compileer de Bewijs-Code</h2>
         <!-- Progress bar moved here -->
         <div class="progress-status">
           <div class="progress-bar">
             <div class="progress-fill" :style="{ width: (lettersFound / letters.length * 100) + '%' }"></div>
           </div>
-          <span class="found-count">{{ lettersFound }} / {{ letters.length }}</span> letters gevonden
+          <span class="found-count">{{ lettersFound }} / {{ letters.length }}</span> bewijs-fragmenten verzameld
         </div>
       </div>
       
       <div class="word-input-container">
         <input v-model="wordInput" 
                class="word-input" 
-               placeholder="Typ hier je woord" 
+               placeholder="🔐 Voer ontsleutelingscode in..." 
                maxlength="5"
                @keyup.enter="checkWord" />
         <button @click="checkWord" class="check-button">
-          <span class="button-text">Controleer</span>
+          <span class="button-text">🚀 Analyseer</span>
           <span class="button-icon">➔</span>
         </button>
       </div>
@@ -85,7 +85,7 @@ export default {
     return {
       letters: Array(5).fill(""),
       wordInput: "",
-      correctWord: "KLAAR",
+      correctWord: "CYBER",
       message: "",
       isCorrect: false,
       justFound: null,

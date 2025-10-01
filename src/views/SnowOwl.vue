@@ -102,11 +102,11 @@ export default {
 
     // Spellen beschikbaarheid
     const tiles = ref([
-      { id: 1, name: "Spel 1", img: new URL('@/assets/dimensions-collapsing.png', import.meta.url).href, title: "Dimensions collapsing", skill: "Ruimtelijk inzicht", available: true },
-      { id: 2, name: "Spel 2", img: new URL('@/assets/agent-fromage.png', import.meta.url).href, title: "Agent Fromage", skill: "Vingervlugheid", available: true },
-      { id: 3, name: "Spel 3", img: new URL('@/assets/laser-lockdown.png', import.meta.url).href, title: "Laser Lockdown", skill: "Precisie", available: true },
-      { id: 4, name: "Spel 4", img: new URL('@/assets/feel-it.png', import.meta.url).href, title: "Feel IT", skill: "Presteren onder druk", available: true },
-      { id: 5, name: "Spel 5", img: new URL('@/assets/dead-body.png', import.meta.url).href, title: "Murder mystery", skill: "Deductie", available: true }
+      { id: 1, name: "Spel 1", img: new URL('@/assets/dimensions-collapsing.png', import.meta.url).href, title: "CyberClues", skill: "Digitaal onderzoek", available: true },
+      { id: 2, name: "Spel 2", img: new URL('@/assets/Memory.png', import.meta.url).href, title: "Memory", skill: "Geheugen & concentratie", available: true },
+      { id: 3, name: "Spel 3", img: new URL('@/assets/laser-lockdown.png', import.meta.url).href, title: "Flappy Wifi", skill: "Reactievermogen", available: true },
+      { id: 4, name: "Spel 4", img: new URL('@/assets/feel-it.png', import.meta.url).href, title: "Zombie Licious", skill: "Strategisch denken", available: true },
+      { id: 5, name: "Spel 5", img: new URL('@/assets/dead-body.png', import.meta.url).href, title: "Mario Survive", skill: "Overleven & aanpassen", available: true }
     ]);
 
     // Ga naar de volgende popup
