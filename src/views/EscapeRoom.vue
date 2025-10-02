@@ -47,7 +47,7 @@ export default {
   name: "MarioSurvive",
   data() {
     return {
-      correctCode: "12345",
+      correctCode: "Luigi",
       enteredCode: "",
       errorMessage: "",
       successMessage: "",

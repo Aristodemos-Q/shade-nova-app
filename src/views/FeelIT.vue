@@ -47,7 +47,7 @@ export default {
   name: "ZombieLicious",
   data() {
     return {
-      correctCode: "12345",
+      correctCode: "Kablam",
       enteredCode: "",
       errorMessage: "",
       successMessage: "",

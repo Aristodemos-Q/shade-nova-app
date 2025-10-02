@@ -47,7 +47,7 @@ export default {
   name: "CyberCluesGame",
   data() {
     return {
-      correctCode: "12345",
+      correctCode: "2376",
       enteredCode: "",
       errorMessage: "",
       successMessage: "",

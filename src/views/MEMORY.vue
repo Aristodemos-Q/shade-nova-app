@@ -47,7 +47,7 @@ export default {
   name: "MemoryGame",
   data() {
     return {
-      correctCode: "12345",
+      correctCode: "Pepsi",
       enteredCode: "",
       errorMessage: "",
       successMessage: "",

@@ -47,7 +47,7 @@ export default {
   name: "FlappyWifi",
   data() {
     return {
-      correctCode: "12345",
+      correctCode: "100101",
       enteredCode: "",
       errorMessage: "",
       successMessage: "",
