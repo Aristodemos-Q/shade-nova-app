@@ -171,11 +171,11 @@ export default {
     ]);
 
     const tiles = ref([
-      { id: 1, name: "Spel 1", progressKey: "game1completed", img: new URL('@/assets/dimensions-collapsing.png', import.meta.url).href, title: "Dimensions collapsing", skill: "Ruimtelijk inzicht", available: true, state: "available" },
-      { id: 2, name: "Spel 2", progressKey: "game2completed", img: new URL('@/assets/agent-fromage.png', import.meta.url).href, title: "Agent Fromage", skill: "Vingervlugheid", available: true, state: "available" },
-      { id: 3, name: "Spel 3", progressKey: "game3completed", img: new URL('@/assets/laser-lockdown.png', import.meta.url).href, title: "Laser Lockdown", skill: "Precisie", available: true, state: "available" },
-      { id: 4, name: "Spel 4", progressKey: "game4completed", img: new URL('@/assets/feel-it.png', import.meta.url).href, title: "Feel IT", skill: "Presteren onder druk", available: true, state: "available" },
-      { id: 5, name: "Spel 5", progressKey: "game5completed", img: new URL('@/assets/dead-body.png', import.meta.url).href, title: "Murder mystery", skill: "Deductie", available: true, state: "available" }
+      { id: 1, name: "Spel 1", progressKey: "game1completed", img: new URL('@/assets/Cyberclue.png', import.meta.url).href, title: "CyberClue", skill: "Ruimtelijk inzicht", available: true, state: "available" },
+      { id: 2, name: "Spel 2", progressKey: "game2completed", img: new URL('@/assets/Memory.png', import.meta.url).href, title: "Memory", skill: "Herinnering", available: true, state: "available" },
+      { id: 3, name: "Spel 3", progressKey: "game3completed", img: new URL('@/assets/Flappywifi.png', import.meta.url).href, title: "Flappywifi", skill: "Precisie", available: true, state: "available" },
+      { id: 4, name: "Spel 4", progressKey: "game4completed", img: new URL('@/assets/Zombierserv.png', import.meta.url).href, title: "ZombieLicious", skill: "Presteren onder druk", available: true, state: "available" },
+      { id: 5, name: "Spel 5", progressKey: "game5completed", img: new URL('@/assets/Marioserv.png', import.meta.url).href, title: "MarioSurvive", skill: "Survival", available: true, state: "available" }
     ]);
 
     const STALE_LOCK_MS = 7 * 60 * 1000;

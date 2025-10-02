@@ -2,7 +2,7 @@
   <header ref="navbarRef" class="navbar" :class="{ 'navbar--active': gameStore.playerName }">
     <div class="navbar__brand">
       <div class="navbar__logo shadow-ring">
-        <img :src="logo" alt="S.H.A.D.E logo" />
+        <img :src="logo" alt="SneeuwUil - S.H.A.D.E logo" />
       </div>
       <div class="navbar__copy">
         <span class="navbar__eyebrow">S.H.A.D.E</span>
@@ -32,7 +32,7 @@
 <script>
 import { ref, computed, onMounted, onUnmounted, nextTick } from "vue";
 import { useGameStore } from "../stores/gameStore";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/sneeuwuil.png";
 
 export default {
   setup() {
@@ -121,19 +121,19 @@ export default {
 }
 
 .navbar__logo {
-  width: 42px;
-  height: 42px;
-  border-radius: 18px;
+  width: 63px;
+  height: 63px;
+  border-radius: 27px;
   background: rgba(124, 92, 255, 0.15);
   display: grid;
   place-items: center;
   border: 1px solid rgba(124, 92, 255, 0.3);
-  padding: 8px;
+  padding: 6px;
 }
 
 .navbar__logo img {
-  width: 26px;
-  height: 26px;
+  width: 51px;
+  height: 51px;
   object-fit: contain;
 }
 
