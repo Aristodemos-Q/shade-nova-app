@@ -62,7 +62,7 @@ export default {
   },
   methods: {
     async checkCode() {
-      if (this.enteredCode.toUpperCase() === this.correctCode) {
+      if (this.enteredCode.toUpperCase() === this.correctCode.toUpperCase()) {
         this.successMessage = "🎉 Wifi verbinding succesvol! Signal navigation protocol voltooid!";
         this.errorMessage = "";
         

@@ -62,7 +62,7 @@ export default {
   },
   methods: {
     async checkCode() {
-      if (this.enteredCode.toUpperCase() === this.correctCode) {
+      if (this.enteredCode.toUpperCase() === this.correctCode.toUpperCase()) {
         this.successMessage = "🎉 Cyber toegang verkregen! Digital forensics protocol voltooid!";
         this.errorMessage = "";
         

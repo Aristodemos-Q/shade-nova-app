@@ -62,7 +62,7 @@ export default {
   },
   methods: {
     async checkCode() {
-      if (this.enteredCode.toUpperCase() === this.correctCode) {
+      if (this.enteredCode.toUpperCase() === this.correctCode.toUpperCase()) {
         this.successMessage = "🎉 Neuraal netwerk geactiveerd! Memory training protocol voltooid!";
         this.errorMessage = "";
         
