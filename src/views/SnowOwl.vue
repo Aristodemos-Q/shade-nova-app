@@ -174,7 +174,7 @@ export default {
       { id: 1, name: "Spel 1", progressKey: "game1completed", img: new URL('@/assets/Cyberclue.png', import.meta.url).href, title: "CyberClue", skill: "Ruimtelijk inzicht", available: true, state: "available" },
       { id: 2, name: "Spel 2", progressKey: "game2completed", img: new URL('@/assets/Memory.png', import.meta.url).href, title: "Memory", skill: "Herinnering", available: true, state: "available" },
       { id: 3, name: "Spel 3", progressKey: "game3completed", img: new URL('@/assets/Flappywifi.png', import.meta.url).href, title: "Flappywifi", skill: "Precisie", available: true, state: "available" },
-      { id: 4, name: "Spel 4", progressKey: "game4completed", img: new URL('@/assets/Zombierserv.png', import.meta.url).href, title: "ZombieLicious", skill: "Presteren onder druk", available: true, state: "available" },
+      { id: 4, name: "Spel 4", progressKey: "game4completed", img: new URL('@/assets/laser-lockdown.png', import.meta.url).href, title: "laser-lockdown", skill: "Ruimtelijk inzicht", available: true, state: "available" },
       { id: 5, name: "Spel 5", progressKey: "game5completed", img: new URL('@/assets/Marioserv.png', import.meta.url).href, title: "MarioSurvive", skill: "Survival", available: true, state: "available" }
     ]);
 
